@@ -63,6 +63,10 @@ bool GPIOReader::init()
         m_sensorData.append(QList<int>());
     }
 
+    // Register ISR function to handle gpio edge interrupts
+    for(int i = 0; i < m_sensorCount; i++)
+        wiringPiISR(this->m_sensorPins[i], INT_EDGE_BOTH, &isr);
+
     return true;
 }
 
@@ -163,26 +167,40 @@ void GPIOReader::push_bit_to_sensor_data(unsigned int pulse_width,int sensor_i){
 }
 
 void GPIOReader::update(){
-    for(int sensor_i = 0; sensor_i < m_sensorCount; sensor_i++){
+    bool check;
 
-        int pid_input = this->m_sensorPins[sensor_i];
+    // Wait up to 1ms for an interrupt to occur
+    check = m_dataAvailFlag.tryAcquire(1, 1);
+    if(check){
+        for(int sensor_i = 0; sensor_i < m_sensorCount; sensor_i++){
 
-        int state = digitalRead(pid_input);
+            int pid_input = this->m_sensorPins[sensor_i];
 
-        if(state != m_sensorState[sensor_i]){
-            m_sensorState[sensor_i] = state;
-            unsigned int c_time = micros();
-            unsigned int c_pulse = c_time - m_sensorPulse[sensor_i];
+            int state = digitalRead(pid_input);
 
-            if(this->m_bDebugMode){
-                LOG_DBG(LOG_FACILTIY_COMMON, "sensor %i(%i): pulse %i",sensor_i, pid_input, c_pulse);
+            if(state != m_sensorState[sensor_i]){
+                m_sensorState[sensor_i] = state;
+                unsigned int c_time = micros();
+                unsigned int c_pulse = c_time - m_sensorPulse[sensor_i];
+
+                if(this->m_bDebugMode){
+                    LOG_DBG(LOG_FACILTIY_COMMON, "sensor %i(%i): pulse %i",sensor_i, pid_input, c_pulse);
+                }
+                if(c_pulse >= PULSE_MIN && c_pulse <= PULSE_MAX){
+                    push_bit_to_sensor_data(c_pulse,sensor_i);
+                }else{
+                    m_sensorData[sensor_i].clear();
+                }
+                m_sensorPulse[sensor_i] = c_time;
             }
-            if(c_pulse >= PULSE_MIN && c_pulse <= PULSE_MAX){
-                push_bit_to_sensor_data(c_pulse,sensor_i);
-            }else{
-                m_sensorData[sensor_i].clear();
-            }
-            m_sensorPulse[sensor_i] = c_time;
+        }
+    }
+}
+
+void GPIOReader::isr(){
+    if(m_pInstance != NULL){
+        if(m_pInstance->m_dataAvailFlag.available() == 0){
+            m_pInstance->m_dataAvailFlag.release(1);
         }
     }
 }

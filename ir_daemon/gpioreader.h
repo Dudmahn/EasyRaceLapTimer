@@ -15,6 +15,7 @@
 #include <QObject>
 #include "singleton.h"
 #include <QHash>
+#include <qsemaphore.h>
 
 class GPIOReader: public QObject, public Singleton<GPIOReader> {
     Q_OBJECT
@@ -43,6 +44,9 @@ private:
     QList<unsigned int> m_sensorPulse;
     QHash<QString, unsigned int> m_sensoredTimes;
     QList<QList<int> > m_sensorData;
+    QSemaphore m_dataAvailFlag;
+
+    static void isr();
 
     friend class Singleton<GPIOReader>;
 };
