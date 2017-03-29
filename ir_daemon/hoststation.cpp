@@ -16,6 +16,7 @@
 #include "restart_button_input.h"
 #include "serialconnection.h"
 #include "gpioreader.h"
+#include "serialreader.h"
 #include <curl/curl.h>
 #include "infoserver.h"
 #include <wiring_pi.h>
@@ -37,9 +38,9 @@ HostStation::HostStation(QObject *parent) : QObject(parent)
 void HostStation::setLastScannedToken(QString v){
     QMutexLocker locker(&m_Mutex);
     if(v.compare(m_strLastScannedToken) != 0){
-        m_strLastScannedToken = v;    
+        m_strLastScannedToken = v;
     }
-	
+
 }
 
 QString HostStation::lastScannedToken(){
@@ -53,6 +54,7 @@ void HostStation::setDebug(bool v){
 
 void HostStation::eventStartNewRace(){
     GPIOReader::instance()->reset();
+    SerialReader::instance()->reset();
     QtConcurrent::run(this, &HostStation::webRequestStartNewRace);
     SerialConnection::instance()->write("RESET#\n");
     LOG_INFOS(LOG_FACILTIY_COMMON, "HostStation::eventStartNewRace");
@@ -60,6 +62,7 @@ void HostStation::eventStartNewRace(){
 
 void HostStation::eventReset(){
     GPIOReader::instance()->reset();
+    SerialReader::instance()->reset();
     LOG_INFOS(LOG_FACILTIY_COMMON, "HostStation::eventReset");
 }
 
@@ -67,6 +70,7 @@ void HostStation::setup(){
     NetworkServer *pNetworkServer = NetworkServer::instance();
     SerialConnection *pSerialConnection = SerialConnection::instance();
     GPIOReader *pGPIOReader = GPIOReader::instance();
+    SerialReader *pSerialReader = SerialReader::instance();
 
     // network connection signals
     connect(pNetworkServer,SIGNAL(startNewRaceEvent()),this,SLOT(eventStartNewRace()));
@@ -80,6 +84,9 @@ void HostStation::setup(){
 
     //gpio reader connection signals
     connect(pGPIOReader,SIGNAL(newLapTimeEvent(QString,unsigned int)),this,SLOT(eventNewLapTime(QString,unsigned int)));
+
+    // serial reader connection signals
+    connect(pSerialReader,SIGNAL(newLapTimeEvent(QString,unsigned int)),this,SLOT(eventNewLapTime(QString,unsigned int)));
 
     connect(RestartButtonInput::instance(),SIGNAL(restartEvent()),this,SLOT(eventStartNewRace()));
 

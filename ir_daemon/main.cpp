@@ -22,6 +22,7 @@
 #include "networkserver.h"
 #include "hoststation.h"
 #include "serialconnection.h"
+#include "serialreader.h"
 #include "configuration.h"
 #include "infoserver.h"
 #include "logger.h"
@@ -47,6 +48,7 @@ int main(int argc, char *argv[])
         if(a.arguments().at(1).compare("--debug") == 0){
             Configuration::instance()->setDebug(true);
             GPIOReader::instance()->setDebug(true);
+            SerialReader::instance()->setDebug(true);
             LOG_DBGS(LOG_FACILTIY_COMMON, "enabled debug mode");
 		}
 
@@ -67,6 +69,11 @@ int main(int argc, char *argv[])
 
         if(a.arguments().at(1).compare("--set_buzzer_pin") == 0){
             Configuration::instance()->setBuzzerPin(a.arguments().at(2).toInt());
+            return 0;
+        }
+
+        if(a.arguments().at(1).compare("--set_serial_reader_device") == 0){
+            Configuration::instance()->setSerialReaderDevice(a.arguments().at(2));
             return 0;
         }
 
@@ -108,14 +115,17 @@ int main(int argc, char *argv[])
     RestartButtonInput::instance()->setPin(Configuration::instance()->restartButtonPin());
     InfoServer::instance();
 
-    SerialConnection::instance()->setup();
+    //SerialConnection::instance()->setup();
 
     if(!GPIOReader::instance()->init()) {
         return -1;
     }
 
+    SerialReader::instance()->setup();
+
 	while(1){
         GPIOReader::instance()->update();
+        SerialReader::instance()->update();
 		Buzzer::instance()->update();
         RestartButtonInput::instance()->update();
         a.processEvents();

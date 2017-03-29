@@ -106,6 +106,16 @@ int Configuration::restartButtonPin(){
     return mp_settings->value("buttons/restart_button_pin",14).toInt(); // 14 is the default pin
 }
 
+QString Configuration::serialReaderDevice(){
+    return mp_settings->value("serial_reader/device","/dev/ttyUSB0").toString();
+}
+
+void Configuration::setSerialReaderDevice(const QString & v){
+    mp_settings->setValue("serial_reader/device", v);
+    mp_settings->sync();
+    LOG_DBG(LOG_CONFIG_FACILITY, "Configuration::setSerialReaderDevice: %s",serialReaderDevice().toStdString().c_str());
+}
+
 QString Configuration::webHost(){
     return mp_settings->value("urls/webhost","http://localhost/").toString();
 }

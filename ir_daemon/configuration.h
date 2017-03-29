@@ -46,6 +46,9 @@ public:
     void setRestartButtonPin(int);
     int restartButtonPin();
 
+    QString serialReaderDevice();
+    void setSerialReaderDevice(const QString &);
+
     QString webHost();
     void setWebHost(const QString &);
     void setSatelliteMode(bool);
