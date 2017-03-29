@@ -50,7 +50,7 @@ public:
     void setLocation(quint8 location) { m_location = location; }
     quint8 location() { return m_location; }
 
-    bool enabled(Severity sev) { return sev >= m_severity; }
+    bool enabled(Severity sev) { return sev <= m_severity; }
 
 private:
     quint8 m_location;
